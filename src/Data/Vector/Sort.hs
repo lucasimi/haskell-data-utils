@@ -6,33 +6,33 @@ import Control.Monad.ST
 import System.Random
 import Data.Vector.Utils
 
-sortAtST :: Ord b => VM.MVector s a -> Int -> Int -> Int -> (a -> b) -> ST s ()
-sortAtST vec start end k f = do
-    higher <- partitionAtST vec start end k f
+sortAtST :: Ord b => VM.MVector s a -> Int -> (a -> b) -> ST s ()
+sortAtST vec k f = do
+    higher <- partitionAtST vec k f
     if higher == k 
         then return ()
         else if k < higher 
-            then sortAtST vec start higher k f
-            else sortAtST vec higher end k f 
+            then sortAtST (VM.slice 0 higher vec) k f
+            else sortAtST (VM.slice higher (VM.length vec - higher) vec) (k - higher) f 
 
-sortAt :: Ord b => V.Vector a -> Int -> Int -> Int -> (a -> b) -> V.Vector a
-sortAt vec start end k f = runST $ do
+sortAt :: Ord b => V.Vector a -> Int -> (a -> b) -> V.Vector a
+sortAt vec k f = runST $ do
     vec' <- V.thaw vec
-    sortAtST vec' start end k f
+    sortAtST vec' k f
     V.freeze vec'
 
-quicksortST :: (RandomGen g, Ord b) => g -> VM.MVector s a -> Int -> Int -> (a -> b) -> ST s g
-quicksortST g vec start end f = if end - start < 2
+quicksortST :: (RandomGen g, Ord b) => g -> VM.MVector s a -> (a -> b) -> ST s g
+quicksortST g vec f = if VM.length vec < 2
     then return g
     else do 
-        let (pivot, g') = uniformR (start, end - 1) g
-        sortAtST vec start end pivot f
-        g'' <- quicksortST g' vec start pivot f
-        quicksortST g'' vec pivot end f
+        let (pivot, g') = uniformR (0, VM.length vec - 1) g
+        sortAtST vec pivot f
+        g'' <- quicksortST g' (VM.slice 0 pivot vec) f
+        quicksortST g'' (VM.slice pivot (VM.length vec - pivot) vec) f
         return g''
 
-quicksort :: Ord b => V.Vector a -> Int -> Int -> (a -> b) -> V.Vector a
-quicksort vec start end f = runST $ do
+quicksort :: Ord b => V.Vector a -> (a -> b) -> V.Vector a
+quicksort vec f = runST $ do
     vec' <- V.thaw vec
-    quicksortST (mkStdGen 42) vec' start end f
+    quicksortST (mkStdGen 42) vec' f
     V.freeze vec'

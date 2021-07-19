@@ -15,7 +15,7 @@ sortAtOrder vec = and [isSorted (sort i) i j | i <- ids, j <- ids]
   where
     n      = V.length vec
     ids    = [0..n - 1]
-    sort i = sortAt vec 0 n i id
+    sort i = sortAt vec i id
     isSorted vec' i j
         | i <= j    = vec' V.! i <= vec' V.! j
         | otherwise = vec' V.! i >= vec' V.! j
@@ -25,7 +25,7 @@ quicksortOrder vec = and [isSorted (qs vec) i j | i <- ids, j <- ids]
   where
     n    = V.length vec
     ids  = [0..n - 1]
-    qs v = quicksort vec 0 n id
+    qs v = quicksort vec id
     isSorted vec' i j
         | i <= j    = vec' V.! i <= vec' V.! j
         | otherwise = vec' V.! i >= vec' V.! j

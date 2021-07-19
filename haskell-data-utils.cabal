@@ -25,13 +25,21 @@ source-repository head
 
 library
   exposed-modules:
+      Data.Tree.BallTree
+      Data.Vector.Sort
+      Data.Vector.Utils
       Lib
   other-modules:
       Paths_haskell_data_utils
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      QuickCheck
+    , base >=4.7 && <5
+    , containers
+    , quickcheck-instances
+    , random
+    , vector
   default-language: Haskell2010
 
 executable haskell-data-utils-exe
@@ -42,8 +50,13 @@ executable haskell-data-utils-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      QuickCheck
+    , base >=4.7 && <5
+    , containers
     , haskell-data-utils
+    , quickcheck-instances
+    , random
+    , vector
   default-language: Haskell2010
 
 test-suite haskell-data-utils-test
@@ -55,6 +68,11 @@ test-suite haskell-data-utils-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      QuickCheck
+    , base >=4.7 && <5
+    , containers
     , haskell-data-utils
+    , quickcheck-instances
+    , random
+    , vector
   default-language: Haskell2010

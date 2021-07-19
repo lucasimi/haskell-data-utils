@@ -7,23 +7,23 @@ import Control.Monad
 import Control.Monad.ST
 import Data.STRef
 
-partitionAtST :: Ord b => VM.MVector s a -> Int -> Int -> Int -> (a -> b) -> ST s Int
-partitionAtST vec start end i f = do
-    VM.swap vec start i
-    value <- VM.read vec start
-    higherRef <- newSTRef $ start + 1
-    forM_ [(start + 1) .. (end - 1)] $ \j -> do
+partitionAtST :: Ord b => VM.MVector s a -> Int -> (a -> b) -> ST s Int
+partitionAtST vec i f = do
+    VM.swap vec 0 i
+    value <- VM.read vec 0
+    higherRef <- newSTRef 1
+    forM_ [1 .. (VM.length vec - 1)] $ \j -> do
         val <- VM.read vec j
         when (f val <= f value) $ do
             higher <- readSTRef higherRef
             VM.swap vec higher j
             modifySTRef higherRef (+1)
     higher <- readSTRef higherRef
-    VM.swap vec start (higher - 1)
+    VM.swap vec 0 (higher - 1)
     return $ higher - 1
 
-partitionAt :: Ord b => V.Vector a -> Int -> Int -> Int -> (a -> b) -> Int
-partitionAt vec start end k f = runST $ do
+partitionAt :: Ord b => V.Vector a -> Int -> (a -> b) -> Int
+partitionAt vec k f = runST $ do
     vec' <- V.thaw vec
-    partitionAtST vec' start end k f
+    partitionAtST vec' k f
 
