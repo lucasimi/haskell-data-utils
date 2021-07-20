@@ -1,7 +1,7 @@
 name:                haskell-data-utils
 version:             0.1.0.0
 github:              "lucasimi/haskell-data-utils"
-license:             GPL3
+license:             GPL-3
 author:              "Luca Simi"
 maintainer:          "lucasimi90@gmail.com"
 copyright:           "2021 Luca Simi"
