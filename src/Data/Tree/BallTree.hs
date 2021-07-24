@@ -4,8 +4,11 @@ import Control.Monad.ST
 import qualified Data.Vector as V
 import qualified Data.Set as S
 import qualified Data.Vector.Mutable as VM
-import System.Random
+import System.Random.MWC
+import System.Random.Internal
 import Data.Vector.Sort
+
+import Data.Tree.BallTree.Internal
 
 data BinTree a b 
     = Empty
@@ -13,31 +16,28 @@ data BinTree a b
     | Node    
         { value :: a
         , left  :: BinTree a b
-        , right :: BinTree a b }
-
-data Ball a b = Ball
-    { center :: a
-    , radius :: b }
+        , right :: BinTree a b } deriving Show
 
 ball :: Ord b => (a -> a -> b) -> Ball a b -> V.Vector a -> V.Vector a
 ball m b = V.filter $ \x -> m (center b) x < radius b
 
 type BallTree a b = BinTree (Ball a b) a
 
-ballTreeST :: (RandomGen g, Ord b) => g -> VM.MVector s a -> (a -> a -> b) -> ST s (BallTree a b)
-ballTreeST g vec m
+ballTreeST :: Ord b => VM.MVector s a -> (a -> a -> b) -> ST s (BallTree a b)
+ballTreeST vec m
     | VM.length vec == 0 = return Empty
     | VM.length vec < 2  = do
         p <- VM.read vec 0
         return $ Leaf p
     | otherwise          = do
-        let (pivot, g') = uniformR (0, VM.length vec - 1) g
-            mid = VM.length vec `div` 2
+        let n     = VM.length vec
+            mid   = n `div` 2
+            pivot = 0
         center <- VM.read vec pivot
         sortAtST vec mid (m center)
-        furth <- VM.read vec mid
-        lft <- ballTreeST g' (VM.slice 0 mid vec) m
-        rgt <- ballTreeST g' (VM.slice mid (VM.length vec - mid) vec) m 
+        furth  <- VM.read vec mid
+        lft    <- ballTreeST (VM.slice 0 mid vec) m
+        rgt    <- ballTreeST (VM.slice mid (n - mid) vec) m 
         return $ Node 
             { value = Ball 
                 { center = center
@@ -48,7 +48,7 @@ ballTreeST g vec m
 ballTree :: Ord b => V.Vector a -> (a -> a -> b) -> BallTree a b
 ballTree vec m = runST $ do
     vec' <- V.thaw vec
-    ballTreeST (mkStdGen 42) vec' m
+    ballTreeST vec' m
 
 ballSearch :: (Ord a, RealFloat b) => BallTree a b -> (a -> a -> b) -> Ball a b -> S.Set a
 ballSearch Empty _ _                                = S.empty  
@@ -61,3 +61,10 @@ ballSearch (Node (Ball c r) lft rgt) m (Ball p eps) = S.union lftSearch rgtSearc
     rgtSearch = if m p c <= r - eps 
         then S.empty 
         else ballSearch rgt m (Ball p eps)
+
+treeSize :: BinTree a b -> Int 
+treeSize b = treeSizeIter b 0
+  where
+    treeSizeIter Empty acc        = acc
+    treeSizeIter (Leaf _) acc     = 1 + acc
+    treeSizeIter (Node _ l r) acc = treeSizeIter r (treeSizeIter r acc)

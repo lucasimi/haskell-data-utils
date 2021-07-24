@@ -4,7 +4,9 @@ import Test.QuickCheck.Instances.Vector
 import qualified Data.Vector as V
 import qualified Data.Set as S
 import Data.Vector.Sort
-import Data.Tree.BallTree
+import Data.Tree.BallTree.Internal
+import qualified Data.Tree.BallTree as BT
+import qualified Data.Tree.BallTree.Inplace as BTI
 
 main :: IO ()
 main = do
@@ -13,7 +15,9 @@ main = do
     putStrLn "Testing quicksort"
     quickCheck quicksortOrder
     putStrLn "Testing ballTree"
-    quickCheck ballTreeRetrieval
+    quickCheck ballTreeBTRetrieval
+    putStrLn "Testing ballTree inplace"
+    quickCheck ballTreeBTIRetrieval
 
 sortAtOrder :: V.Vector Float -> Bool 
 sortAtOrder vec = and [isSorted (sort i) i j | i <- ids, j <- ids]
@@ -35,10 +39,18 @@ quicksortOrder vec = and [isSorted (qs vec) i j | i <- ids, j <- ids]
         | i <= j    = vec' V.! i <= vec' V.! j
         | otherwise = vec' V.! i >= vec' V.! j
 
-ballTreeRetrieval :: V.Vector Float -> Float -> Bool
-ballTreeRetrieval vec r = and [search vec m (x + s/2) s == ballSearch t m (Ball (x + s/2) s) | x <- V.toList vec]
+ballTreeBTRetrieval :: V.Vector Float -> Float -> Bool
+ballTreeBTRetrieval vec r = and [search (x + s/2) s == BT.ballSearch t m (Ball (x + s/2) s) | x <- V.toList vec]
   where
-    s = 0.0001 + abs r
-    m = \x y -> abs $ x - y
-    t = ballTree vec m
-    search vec' m' x' r' = S.fromList $ V.toList $ V.filter (\y -> m' x' y <= r') vec'
+    s            = 0.0001 + abs r
+    m            = \x y -> abs $ x - y
+    t            = BT.ballTree vec m
+    search x' r' = S.fromList $ V.toList $ V.filter (\y -> m x' y <= r') vec
+
+ballTreeBTIRetrieval :: V.Vector Float -> Float -> Bool
+ballTreeBTIRetrieval vec r = and [search (x + s/2) s == BTI.ballSearch t m (Ball (x + s/2) s) | x <- V.toList vec]
+  where
+    s            = 0.0001 + abs r
+    m            = \x y -> abs $ x - y
+    t            = BTI.ballTree vec m
+    search x' r' = S.fromList $ V.toList $ V.filter (\y -> m x' y <= r') vec
